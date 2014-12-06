@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 pythonSystem
 ============
 
@@ -16,3 +17,7 @@ add subclasses ,
   (live market data handler)etc.
 
 account margin/shorting constraints
+=======
+pythonSystemDev
+===============
+>>>>>>> 8854d16941f896990d2aecda45b97e4ab3ad37c3
