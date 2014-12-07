@@ -1,9 +1,9 @@
-<<<<<<< HEAD
 pythonSystem
 ============
 
 TS Development
 
+12/7/2014
 To add-
 logs/trades/reports,
 port octave scripts into python,
