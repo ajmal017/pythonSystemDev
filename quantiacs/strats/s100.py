@@ -73,6 +73,7 @@ def myTradingSystem(DATE, OPEN, HIGH, LOW, CLOSE, VOL, exposure, equity, setting
     # scale and builds the ratio. For each day, "smaQuot" is an array of "nMarkets"
     # size.
     nMarkets = np.shape(CLOSE)[1]
+    nDates=DATE;
     closePrices=pd.DataFrame(CLOSE, columns=settings['markets']); 
     #print 'nmarkets: %s closePrices: %s' % (symbols[0], closePrices[symbols[0]])
     #print 'nmarkets: %s ' % (nMarkets)
@@ -91,18 +92,18 @@ def myTradingSystem(DATE, OPEN, HIGH, LOW, CLOSE, VOL, exposure, equity, setting
     if isInTrade is False and pairs['zscore'].iget(-1) <= -z_entry_threshold:
     	pos[0,sym0_idx] = 1
     	pos[0,sym1_idx] = -1
-	print 'entry, zscore: %5.3f' % pairs['zscore'].iget(-1)
+	print 'date: %d entry, zscore: %5.3f' % (nDates[sym0_idx], pairs['zscore'].iget(-1))
 	isInTrade=True
     if isInTrade is False and pairs['zscore'].iget(-1)  >= z_entry_threshold:
 	pos[0,sym0_idx] = -1
         pos[0,sym1_idx] = 1
-	print 'entry 2 , zscore: %5.3f' % pairs['zscore'].iget(-1)
+	print 'date: %d entry 2, zscore: %5.3f' % (nDates[sym0_idx], pairs['zscore'].iget(-1))
 	isInTrade=True
     if isInTrade and np.abs(pairs['zscore'].iget(-1)) <= z_exit_threshold:
-	 pos[0,sym0_idx] = 0
-         pos[0,sym1_idx] = 0 
-	 print 'exit, zscore: %5.3f' % pairs['zscore'].iget(-1)
-	 isInTrade=False
+	pos[0,sym0_idx] = 0
+        pos[0,sym1_idx] = 0 
+	print 'date: %d exit, zscore: %5.3f' % (nDates[sym0_idx], pairs['zscore'].iget(-1))
+	isInTrade=False
     #periodLong= 200
     #periodShort= 40
 
