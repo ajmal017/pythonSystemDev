@@ -44,7 +44,7 @@ def calculate_spread_zscore(pairs, symbols, lookback=100):
 
     # Use the pandas Ordinary Least Squares method to fit a rolling
     # linear regression between the two closing price time series
-    print "Fitting the rolling Linear Regression..."
+    #print "Fitting the rolling Linear Regression..."
     model = pd.ols(y=pairs['%s_close' % symbols[0].lower()],
                    x=pairs['%s_close' % symbols[1].lower()],
                    window=lookback)
@@ -52,12 +52,13 @@ def calculate_spread_zscore(pairs, symbols, lookback=100):
     # Construct the hedge ratio and eliminate the first
     # lookback-length empty/NaN period
     pairs['hedge_ratio'] = model.beta['x']
-    pairs = pairs.dropna()
+    #pairs = pairs.dropna()
 
     # Create the spread and then a z-score of the spread
-    print "Creating the spread/zscore columns..."
+    #print "Creating the spread/zscore columns..."
     pairs['spread'] = pairs['%s_close' % symbols[0].lower()] - pairs['hedge_ratio']*pairs['%s_close' % symbols[1].lower()]
     pairs['zscore'] = (pairs['spread'] - np.mean(pairs['spread']))/np.std(pairs['spread'])
+   
     return pairs
 
 ##### Do not change this function definition #####
@@ -71,6 +72,8 @@ def myTradingSystem(DATE, OPEN, HIGH, LOW, CLOSE, VOL, exposure, equity, setting
     # size.
     nMarkets = np.shape(CLOSE)[1]
     closePrices=pd.DataFrame(CLOSE, columns=settings['markets']); 
+    #print 'nmarkets: %s closePrices: %s' % (symbols[0], closePrices[symbols[0]])
+    #print 'nmarkets: %s ' % (nMarkets)
     pairs['%s_close' % symbols[0].lower()] = closePrices[symbols[0]]; #np.take(CLOSE, sym0_idx, axis=1);
     pairs['%s_close' % symbols[1].lower()] = closePrices[symbols[1]]; #np.take(CLOSE, sym1_idx, axis=1);
     pairs = calculate_spread_zscore(pairs, symbols, 200)
@@ -79,19 +82,22 @@ def myTradingSystem(DATE, OPEN, HIGH, LOW, CLOSE, VOL, exposure, equity, setting
 
     # Calculate when to be long, short and when to exit
     pos= np.zeros((1,nMarkets))
-    if 'zscore' not in pairs.index or pairs['zscore'] is None:
+    if pairs['zscore'] is None:
 	return pos, settings;
 
-    if pairs['zscore'] <= -z_entry_threshold:
+    #print 'zscore: %5.3f ' % (pairs['zscore'].iget(-1))
+    if pairs['zscore'].iget(-1) <= -z_entry_threshold:
     	pos[0,sym0_idx] = 1
     	pos[0,sym1_idx] = -1
-
-    elif pairs['zscore'] >= z_entry_threshold:
+	print 'entry, zscore: %5.3f' % pairs['zscore'].iget(-1)
+    if pairs['zscore'].iget(-1)  >= z_entry_threshold:
 	pos[0,sym0_idx] = -1
         pos[0,sym1_idx] = 1
-    elif np.abs(pairs['zscore']) <= z_exit_threshold:
+	print 'entry 2 , zscore: %5.3f' % pairs['zscore'].iget(-1)
+    if np.abs(pairs['zscore'].iget(-1)) <= z_exit_threshold:
 	 pos[0,sym0_idx] = 0
          pos[0,sym1_idx] = 0 
+	 print 'exit, zscore: %5.3f' % pairs['zscore'].iget(-1)
 
     #periodLong= 200
     #periodShort= 40
