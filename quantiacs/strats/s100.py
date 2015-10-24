@@ -8,6 +8,7 @@ bars=set();
 symbols=('F_CL','F_NG');
 sym0_idx=1;
 sym1_idx=2;
+isInTrade=False;
 
 pairs=pd.DataFrame({}, columns=['datetime','open','high','low','close','volume','na']);
 #datadir = 'tickerData'  # Change this to reflect your data path!
@@ -65,6 +66,7 @@ def calculate_spread_zscore(pairs, symbols, lookback=100):
 def myTradingSystem(DATE, OPEN, HIGH, LOW, CLOSE, VOL, exposure, equity, settings):
     global pairs;
     global symbols;
+    global isInTrade;
     # This system uses mean reversion techniques to allocate capital into the desired equities
 
     # This strategy evaluates two averages over time of the close over a long/short
@@ -86,19 +88,21 @@ def myTradingSystem(DATE, OPEN, HIGH, LOW, CLOSE, VOL, exposure, equity, setting
 	return pos, settings;
 
     #print 'zscore: %5.3f ' % (pairs['zscore'].iget(-1))
-    if pairs['zscore'].iget(-1) <= -z_entry_threshold:
+    if isInTrade is False and pairs['zscore'].iget(-1) <= -z_entry_threshold:
     	pos[0,sym0_idx] = 1
     	pos[0,sym1_idx] = -1
 	print 'entry, zscore: %5.3f' % pairs['zscore'].iget(-1)
-    if pairs['zscore'].iget(-1)  >= z_entry_threshold:
+	isInTrade=True
+    if isInTrade is False and pairs['zscore'].iget(-1)  >= z_entry_threshold:
 	pos[0,sym0_idx] = -1
         pos[0,sym1_idx] = 1
 	print 'entry 2 , zscore: %5.3f' % pairs['zscore'].iget(-1)
-    if np.abs(pairs['zscore'].iget(-1)) <= z_exit_threshold:
+	isInTrade=True
+    if isInTrade and np.abs(pairs['zscore'].iget(-1)) <= z_exit_threshold:
 	 pos[0,sym0_idx] = 0
          pos[0,sym1_idx] = 0 
 	 print 'exit, zscore: %5.3f' % pairs['zscore'].iget(-1)
-
+	 isInTrade=False
     #periodLong= 200
     #periodShort= 40
 
@@ -143,10 +147,10 @@ def mySettings():
     # 'UPS','USB','UTX','V','VZ','WAG','WFC','WMT','XOM']
 
     # Futures Contracts
-    settings['markets']  = ['CASH','F_CL','F_NG', 'F_AD', 'F_BO', 'F_BP', 'F_C', 'F_CD',  \
-    'F_DJ', 'F_EC', 'F_ES', 'F_FV', 'F_GC', 'F_HG', 'F_HO', 'F_LC', \
-    'F_LN', 'F_NQ', 'F_RB', 'F_S', 'F_SF', 'F_SI', 'F_SM', 'F_SP', \
-    'F_TY', 'F_US', 'F_W', 'F_YM']
+    settings['markets']  = ['CASH','F_CL','F_NG'] #, 'F_AD', 'F_BO', 'F_BP', 'F_C', 'F_CD',  \
+    #'F_DJ', 'F_EC', 'F_ES', 'F_FV', 'F_GC', 'F_HG', 'F_HO', 'F_LC', \
+    #'F_LN', 'F_NQ', 'F_RB', 'F_S', 'F_SF', 'F_SI', 'F_SM', 'F_SP', \
+    #'F_TY', 'F_US', 'F_W', 'F_YM']
 
 
     settings['lookback']= 504
