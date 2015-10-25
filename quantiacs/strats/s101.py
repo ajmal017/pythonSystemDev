@@ -15,8 +15,10 @@ def calculate_adf(spread):
         spread=spread[~np.isnan(spread)]
         #print '%s' % spread
         cadf = ts.adfuller(spread)
-        churst = hurst(spread)
-        print_coint(cadf,churst)
+        if (cadf[1] <= 0.05):
+            churst = hurst(spread)
+            print_coint(cadf,churst)
+        return cadf
     #except:
     #    print sys.exc_info()[0]
         
@@ -39,6 +41,8 @@ def print_coint(adf, hurst):
     print "ADF test for mean reversion"
     print "Datapoints", adf[3]
     print "p-value", adf[1]
+   
+        
     print "Test-Stat", adf[0]
     for key in adf[4]:
       print adf[0]<adf[4][key],"Critical Values:",key, adf[4][key],"Test-stat: ",adf[0]
@@ -46,7 +50,12 @@ def print_coint(adf, hurst):
     print "Hurst Exponent"
     print "Hurst(GBM): %s Hurst(MR): %s Hurst(TREND): %s" % (.50,0,1)
     print "Hurst(Resid): %s" % (hurst)
+    if adf[1] <= 0.05:
+        print 'The spread is likely Cointegrated with a pvalue of %s' % adf[1]
+    else:
+        print 'The spread is likely NOT Cointegrated with a pvalue of %s' % adf[1]
     
+        
 def create_pairs_dataframe(datadir, symbols):
     """Creates a pandas DataFrame containing the closing price
     of a pair of symbols based on CSV files containing a datetime
@@ -107,8 +116,11 @@ def make_signals(pairs, symbols, symidx, pos, settings, nDates,
 	return pairs, pos, settings
 
 
-    calculate_adf(pairs['spread'])
+    cadf=calculate_adf(pairs['spread'])
     
+    if cadf[1] <= 0.05:
+        return pairs, pos, settings
+        
     isInTrade=0
    
     if '%s_%s' % (symbols[0], symbols[1]) in settings:
