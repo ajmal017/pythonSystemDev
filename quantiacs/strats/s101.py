@@ -3,12 +3,50 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-
+import statsmodels.tsa.stattools as ts
+import sys
 
 pairs=pd.DataFrame({}, columns=['datetime','open','high','low','close','volume','na']);
 #datadir = 'tickerData'  # Change this to reflect your data path!
 #pairs = create_pairs_dataframe(datadir, symbols)
+def calculate_adf(spread):
+    
+    #try:
+        spread=spread[~np.isnan(spread)]
+        #print '%s' % spread
+        cadf = ts.adfuller(spread)
+        churst = hurst(spread)
+        print_coint(cadf,churst)
+    #except:
+    #    print sys.exc_info()[0]
+        
+def hurst(spread):
+     #create range of lag values
+     lags = range(2,100)
+     #calculate the array of the variances of the lagged differences
+     tau = [np.sqrt(np.std(np.subtract(spread[lag:], spread[:-lag]))) for lag in lags]
+     #use a linear fit to estimate the hurt exponent
+     poly = np.polyfit(np.log(lags), np.log(tau),1)
+     #return the hurst exponent from the polyfit output
+     return poly[0]*2.0
 
+def print_coint(adf, hurst):
+    #create a GBM, MR, Trending series
+    #gbm = log(cumsum(randn(100000))+1000)
+    #mr = log(randn(100000)+1000)
+    #tr = log(cumsum(randn(100000)+1)+1000)
+    print ""
+    print "ADF test for mean reversion"
+    print "Datapoints", adf[3]
+    print "p-value", adf[1]
+    print "Test-Stat", adf[0]
+    for key in adf[4]:
+      print adf[0]<adf[4][key],"Critical Values:",key, adf[4][key],"Test-stat: ",adf[0]
+    print ""
+    print "Hurst Exponent"
+    print "Hurst(GBM): %s Hurst(MR): %s Hurst(TREND): %s" % (.50,0,1)
+    print "Hurst(Resid): %s" % (hurst)
+    
 def create_pairs_dataframe(datadir, symbols):
     """Creates a pandas DataFrame containing the closing price
     of a pair of symbols based on CSV files containing a datetime
@@ -41,6 +79,7 @@ def calculate_spread_zscore(pairs, symbols, lookback=100):
     # Use the pandas Ordinary Least Squares method to fit a rolling
     # linear regression between the two closing price time series
     #print "Fitting the rolling Linear Regression..."
+   
     model = pd.ols(y=pairs['%s_close' % symbols[0].lower()],
                    x=pairs['%s_close' % symbols[1].lower()],
                    window=lookback)
@@ -54,7 +93,7 @@ def calculate_spread_zscore(pairs, symbols, lookback=100):
     #print "Creating the spread/zscore columns..."
     pairs['spread'] = pairs['%s_close' % symbols[0].lower()] - pairs['hedge_ratio']*pairs['%s_close' % symbols[1].lower()]
     pairs['zscore'] = (pairs['spread'] - np.mean(pairs['spread']))/np.std(pairs['spread'])
-   
+    
     return pairs
 
 
@@ -64,10 +103,11 @@ def make_signals(pairs, symbols, symidx, pos, settings, nDates,
     
     pairs = calculate_spread_zscore(pairs, symbols, 200)
 
-
     if pairs['zscore'] is None:
 	return pairs, pos, settings
 
+
+    calculate_adf(pairs['spread'])
     
     isInTrade=0
    
