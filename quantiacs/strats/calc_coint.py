@@ -3,6 +3,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import statsmodels.tsa.stattools as ts
 
 
 pairs=pd.DataFrame({}, columns=['datetime','open','high','low','close','volume','na']);
@@ -57,46 +58,70 @@ def calculate_spread_zscore(pairs, symbols, lookback=100):
    
     return pairs
 
-
-def make_signals(pairs, symbols, symidx, pos, settings, nDates, 
-                                     z_entry_threshold=2.0, 
-                                     z_exit_threshold=1.0):
+def calculate_adf(spread):
+    cadf = ts.adfuller(spread)
+    churst = hurst(spread)
+    print_coint(cadf,churst)
     
-    pairs = calculate_spread_zscore(pairs, symbols, 200)
+def hurst(ts):
+     #create range of lag values
+     lags = range(2,100)
+     #calculate the array of the variances of the lagged differences
+     tau = [sqrt(std(subtract(ts[lag:], ts[:-lag]))) for lag in lags]
+     #use a linear fit to estimate the hurt exponent
+     poly = polyfit(log(lags), log(tau),1)
+     #return the hurst exponent from the polyfit output
+     return poly[0]*2.0
+ 
+def print_coint(adf, hurst):
+    #create a GBM, MR, Trending series
+    #gbm = log(cumsum(randn(100000))+1000)
+    #mr = log(randn(100000)+1000)
+    #tr = log(cumsum(randn(100000)+1)+1000)
+    print ""
+    print "ADF test for mean reversion"
+    print "Datapoints", adf[3]
+    print "p-value", adf[1]
+    print "Test-Stat", adf[0]
+    for key in adf[4]:
+      print adf[0]<adf[4][key],"Critical Values:",key, adf[4][key],"Test-stat: ",adf[0]
+    print ""
+    print "Hurst Exponent"
+    print "Hurst(GBM): %s Hurst(MR): %s Hurst(TREND): %s" % (.50,0,1)
+    print "Hurst(Resid): %s" % (hurst)
 
+def make_signal(pairs, symbols, symidx, pos, settings):
+    pairs = calculate_spread_zscore(pairs, symbols, 200)
+    z_entry_threshold=2.0
+    z_exit_threshold=1.0
 
     if pairs['zscore'] is None:
-	return pairs, pos, settings
+	return pos, settings;
 
     
-    isInTrade=0
-   
-    if '%s_%s' % (symbols[0], symbols[1]) in settings:
-       isInTrade= settings['%s_%s' % (symbols[0], symbols[1])];
+    isInTrade=pairs['%s_%s' % (symbols[0], symbols[1])];
+    if isInTrade is None:
+        isInTrade=False
     
-    #print 'zscore: %5.3f ' % (pairs['zscore'].iat[-1])
-    if isInTrade == 0 and pairs['zscore'].iat[-1] <= -z_entry_threshold:
+    #print 'zscore: %5.3f ' % (pairs['zscore'].iget(-1))
+    if isInTrade is False and pairs['zscore'].iget(-1) <= -z_entry_threshold:
         pos[0,symidx[0]] = 1
         pos[0,symidx[1]] = -1
-        print 'date: %d entry, zscore: %5.3f' % (nDates[symidx[0]], pairs['zscore'].iat[-1])    
-        isInTrade=1
-    elif isInTrade == 0 and pairs['zscore'].iat[-1]  >= z_entry_threshold:
+        print 'date: %d entry, zscore: %5.3f' % (nDates[symidx[0]], pairs['zscore'].iget(-1))    
+        isInTrade=True
+    if isInTrade is False and pairs['zscore'].iget(-1)  >= z_entry_threshold:
         pos[0,symidx[0]] = -1
         pos[0,symidx[1]] = 1
-        print 'date: %d entry 2, zscore: %5.3f' % (nDates[symidx[0]], pairs['zscore'].iat[-1])
-        isInTrade=2
-    elif isInTrade > 0 and np.abs(pairs['zscore'].iat[-1]) <= z_exit_threshold:
-        if isInTrade==1:
-            pos[0,symidx[0]] = -1
-            pos[0,symidx[1]] = 1
-        if isInTrade==2:
-            pos[0,symidx[0]] = 1
-            pos[0,symidx[1]] = -1
-        print 'date: %d exit, zscore: %5.3f' % (nDates[symidx[0]], pairs['zscore'].iat[-1])
-        isInTrade=0
+        print 'date: %d entry 2, zscore: %5.3f' % (nDates[symidx[0]], pairs['zscore'].iget(-1))
+        isInTrade=True
+    if isInTrade and np.abs(pairs['zscore'].iget(-1)) <= z_exit_threshold:
+        pos[0,symidx[0]] = 0
+        pos[0,symidx[1]] = 0 
+        print 'date: %d exit, zscore: %5.3f' % (nDates[symidx[0]], pairs['zscore'].iget(-1))
+        isInTrade=False
         
-    settings['%s_%s' % (symbols[0], symbols[1])]=isInTrade
-    return pairs, pos, settings
+    pairs['%s_%s' % (symbols[0], symbols[1])]=isInTrade
+    return pos, settings
 
 ##### Do not change this function definition #####
 def myTradingSystem(DATE, OPEN, HIGH, LOW, CLOSE, VOL, exposure, equity, settings):
@@ -112,8 +137,7 @@ def myTradingSystem(DATE, OPEN, HIGH, LOW, CLOSE, VOL, exposure, equity, setting
     
     nMarkets = np.shape(CLOSE)[1]
     
-    positions=equity[1]
-    
+    positions=np.shape(exposure)[1]
     pos= np.zeros((1,nMarkets))
     
     nDates=DATE;
@@ -122,17 +146,13 @@ def myTradingSystem(DATE, OPEN, HIGH, LOW, CLOSE, VOL, exposure, equity, setting
     #print 'nmarkets: %s ' % (nMarkets)
     
     symidx=(1,2);
-    symbols=(settings['markets'][symidx[0]], settings['markets'][symidx[1]])
-    #print '%s: %s, %s: %s' % (symbols[0], positions[symidx[0]], symbols[1], positions[symidx[1]])
+    symbols=(settings['markets'][symidx[0]], settings['markets'][symidx[1]]);
+    print '%s: %5.2f, %s: %5.2f' % (symbols[0], positions[symidx[0], symbols[1], positions[symidx[1]]])
     pairs['%s_close' % symbols[0].lower()] = closePrices[symbols[0]]; #np.take(CLOSE, sym0_idx, axis=1);
     pairs['%s_close' % symbols[1].lower()] = closePrices[symbols[1]]; #np.take(CLOSE, sym1_idx, axis=1);
     
-    (pairs,pos, settings)=make_signals(pairs, symbols, symidx, pos, settings, nDates, 2.0, 1.0)
-    if pos[0,symidx[0]] > 0:
-        print '%s LONG: %s, %s SHORT: %s' % (symbols[0], closePrices[symbols[0]][0], symbols[1], closePrices[symbols[0]][1])
-    elif pos[0, symidx[0]] < 0:
-        print '%s SHORT: %s, %s LONG: %s' % (symbols[0], closePrices[symbols[0]][0], symbols[1], closePrices[symbols[0]][1])
-    #print '%s: %5.3f, %s: %5.3f' % (symbols[0], pos[0,symidx[0]], symbols[1], pos[0,symidx[1]])
+    (pos, settings)=make_signal(pairs, symbols, symidx, pos, settings)
+    
     
     #periodLong= 200
     #periodShort= 40
