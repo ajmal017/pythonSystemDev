@@ -230,10 +230,10 @@ def mySettings():
     # 'UPS','USB','UTX','V','VZ','WAG','WFC','WMT','XOM']
 
     # Futures Contracts
-    settings['markets']  = ['CASH','F_CL','F_NG', 'F_AD', 'F_BO', 'F_BP', 'F_C', 'F_CD',  \
-    'F_DJ', 'F_EC', 'F_ES', 'F_FV', 'F_GC', 'F_HG', 'F_HO', 'F_LC', \
-    'F_LN', 'F_NQ', 'F_RB', 'F_S', 'F_SF', 'F_SI', 'F_SM', 'F_SP', \
-    'F_TY', 'F_US', 'F_W', 'F_YM']
+    settings['markets']  = ['CASH','F_CL','F_GC'] #, 'F_AD', 'F_BO', 'F_BP', 'F_C', 'F_CD',  \
+    #'F_DJ', 'F_EC', 'F_ES', 'F_FV', 'F_NG', 'F_HG', 'F_HO', 'F_LC', \
+    # 'F_LN', 'F_NQ', 'F_RB', 'F_S', 'F_SF', 'F_SI', 'F_SM', 'F_SP', \
+    #'F_TY', 'F_US', 'F_W', 'F_YM']
 
 
     settings['lookback']= 504
