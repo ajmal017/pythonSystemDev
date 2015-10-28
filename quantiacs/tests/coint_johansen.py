@@ -1,5 +1,4 @@
 import pandas as pd
-from functions import *
 import numpy as np
 import matplotlib.pyplot as plt
 from johansen_test import coint_johansen

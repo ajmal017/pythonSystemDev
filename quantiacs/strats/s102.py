@@ -32,26 +32,28 @@ def calculate_johansen(y, p):
         """
 
         N, l = y.shape
-        jres = coint_johansen(y, p, 0)
+        jres = coint_johansen(y, p, 1)
         trstat = jres.lr1                       # trace statistic
         tsignf = jres.cvt                       # critical values
 
+        r=0
         for i in range(l):
             if trstat[i] > tsignf[i, 1]:     # 0: 90%  1:95% 2: 99%
                 r = i + 1
+                
         jres.r = r
         jres.evecr = jres.evec[:, :r]
-
         print_johansen(jres)
         return jres
         
 def print_johansen(jres):
     print "There are ", jres.r, "cointegration vectors"
-    v1=jres.evecr[:,0]
-    v2=jres.evecr[:,1]
-    print v1
-    print v2
-    v3=jres.evec[:,2]  # v3 is not a cointegration vector
+    print "jres: %s" % jres.evecr
+    #v1=jres.evecr[:,0]
+    #v2=jres.evecr[:,1]
+    #print v1
+    #print v2
+    #v3=jres.evec[:,2]  # v3 is not a cointegration vector
 
 def hurst(spread):
      #create range of lag values
@@ -263,14 +265,14 @@ def mySettings():
     # 'UPS','USB','UTX','V','VZ','WAG','WFC','WMT','XOM']
 
     # Futures Contracts
-    settings['markets']  = ['CASH','F_CL','F_NG', 'F_AD', 'F_BO', 'F_BP', 'F_C', 'F_CD',  \
-    'F_DJ', 'F_EC', 'F_ES', 'F_FV', 'F_GC', 'F_HG', 'F_HO', 'F_LC', \
-    'F_LN', 'F_NQ', 'F_RB', 'F_S', 'F_SF', 'F_SI', 'F_SM', 'F_SP', \
-    'F_TY', 'F_US', 'F_W', 'F_YM']
+    settings['markets']  = ['F_AD','F_CL','F_GC', 'F_BO'] #, 'F_BP', 'F_C', 'F_CD',  \
+    #'F_DJ', 'F_EC', 'F_ES', 'F_FV', 'F_HO', 'F_HG', 'F_NG', 'F_LC', \
+    #'F_LN', 'F_NQ', 'F_RB', 'F_S', 'F_SF', 'F_SI', 'F_SM', 'F_SP', \
+    #'F_TY', 'F_US', 'F_W', 'F_YM']
 
 
     settings['lookback']= 504
-    settings['budget']= 10**6
+    settings['budget']= 1000000
     settings['slippage']= 0.05
 
     return settings
@@ -481,7 +483,8 @@ def detrend(y, order):
     return OLS(y, np.vander(np.linspace(-1,1,len(y)), order+1)).fit().resid
 
 def resid(y, x):
-    
+
+    #print '%s %s' % (y,x)
     if x.size == 0:
         return y
     r = y - np.dot(x, np.dot(np.linalg.pinv(x), y))
@@ -497,7 +500,7 @@ def coint_johansen(x, p, k, coint_trend=None):
     #     error('Wrong # of inputs to johansen')
     #    end
     nobs, m = x.shape
-
+    #print 'x: %s' % (x)
     #why this?  f is detrend transformed series, p is detrend data
     if (p > -1):
         f = 0
@@ -512,10 +515,10 @@ def coint_johansen(x, p, k, coint_trend=None):
     dx    = tdiff(x,1, axis=0)
     #dx    = trimr(dx,1,0)
     z     = mlag(dx,k)#[k-1:]
-    print z.shape
+    #print z.shape
     z = trimr(z,k,0)
     z     = detrend(z,f)
-    print dx.shape
+    #print 'dx: %s z: %s' % (dx, z)
     dx = trimr(dx,k,0)
 
     dx    = detrend(dx,f)
